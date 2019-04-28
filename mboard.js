@@ -14,7 +14,7 @@ const LastActiveUpdateInterval = 120;
 //#region Fields
 if (typeof isBoardMaster === 'undefined') 
     isBoardMaster = false;
-    
+
 let DevMode = false;
 let LastError = null;
 let Misord = null
@@ -1837,7 +1837,7 @@ const InitVoiceCommands = function() {
 //#endregion
 
 //#region Init
-$('#mboard').append(mboardHTML);
+$('#mboard').html('Test');
 registerEvents();
 InitMBoard();
 $('.mb-top-button').balloon({ position: "bottom right" });
