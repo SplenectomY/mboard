@@ -315,7 +315,7 @@ const registerEvents = function(){
     });
 
     $('#LF-mb-welcome-confirmButton').click(function(e) {
-        if (!MBoardInit) InitMBoard();
+        if (!MBoardInit) initMBoard();
         if (!AllowClickConfirmButton) return;
         JoinReportPlayTime = $('#LF-mb-welcome-playtimeAmount').val();
         ClientPlaytime = new Date().getTime() + (Number(JoinReportPlayTime) * 1000 * 60 * 60);
@@ -337,7 +337,7 @@ const registerEvents = function(){
             $('#mb-welcome-warningbox').text('Please select a doctrine and ship.')
             return;
         }
-        ConfirmationSuccessful();
+        confirmationSuccessful();
     })
 
     $('#LF-mb-welcome-doctrine-selection, #LF-mb-welcome-ship-selection, #LF-mb-welcome-misord-selection').click(function(e) {
@@ -400,7 +400,7 @@ const registerEvents = function(){
 
     $('#mb-changeInfo').click(function(){
         click2.play();
-        ChangePilotInfo();
+        changePilotInfo();
     });
             
     $('#mb-togglePilotInfo').click(function() {
@@ -422,7 +422,7 @@ const registerEvents = function(){
         BoardClosed = true;
         click2.play();
         setTimeout(function(){ 
-            ChangePilotInfo(3000);
+            changePilotInfo(3000);
             startSound.play();
             setTimeout(()=>{
                 try
@@ -453,7 +453,7 @@ const registerEvents = function(){
             ClientRemarks = 'in development mode';
             if (ClientCallsign == 'Splen') isBoardMaster = true;
             ClientPlaytime = new Date().getTime() + (60 * 60 * 1000);
-            ConfirmationSuccessful();
+            confirmationSuccessful();
         }
     };
 
@@ -525,7 +525,7 @@ const showDebugBox = function(msg) {
     }, 10000);
 }
 
-const ChangeMisordTitle = function() {
+const changeMisordTitle = function() {
     $('#misordTitle').text('MISORD '+getNATOLetter(ClientMisord));
 }
 
@@ -539,7 +539,7 @@ const welcomeBoxLoadingDots = function() {
     }, 250);
 }
 
-const PlaytimeUpdateLoop = function() {
+const playtimeUpdateLoop = function() {
     setTimeout(function(){
         $('.shipName').each(function(){
             let txt = $(this).text();
@@ -558,7 +558,7 @@ const PlaytimeUpdateLoop = function() {
             });
             $(this).text(re);
         });
-        PlaytimeUpdateLoop();
+        playtimeUpdateLoop();
     }, 60000);
 }
 
@@ -616,7 +616,7 @@ const renderPilots = function() {
     for (i=1; i < sections.length; i++) {
         // wings
         let newWings = []
-        _.each(sections[i].wings, function(e,i,l){
+        _.each(sections[i].wings, (e)=>{
             if ($.inArray(e, uniquePilots) === -1) newWings.push(e);
         }); 
     }
@@ -626,7 +626,7 @@ const renderPilots = function() {
     for (var k in pilots) {
         if (k == ClientCallsign && pilots[k] !== undefined && pilots[k].misord !== ClientMisord){
             ClientMisord = pilots[k].misord;
-            ChangeMisordTitle();
+            changeMisordTitle();
         }
         if (pilots.hasOwnProperty(k) && pilots[k].section === 0) {
             if (pilots[k].playtime > t) pilots[k].isActive = true;
@@ -836,14 +836,12 @@ const renderFlights = function() {
         })
         $('.leadButton').removeClass('active');
         preventSectionHover = false;
-    });
-
+    })
     $('.section').hover(function() {
         if (!preventSectionHover) $(this).addClass('fakeHover');
     }, function() {
         $(this).removeClass('fakeHover');
-    });
-
+    })
     $('.leadButton').click(function() {
         click2.play();
         let handle = $(this).attr('data-handle');
@@ -851,7 +849,7 @@ const renderFlights = function() {
         let flightName = $(this).attr('data-flight');
         let section = sections[secNo];
         if (section.lead === handle) {
-            PromoteToFlightLead(handle, flightName) ;
+            promoteToFlightLead(handle, flightName) ;
             pushDataAndRefresh();
             return;
         }
@@ -861,10 +859,9 @@ const renderFlights = function() {
         section.lead = handle;
         section.wings = _.filter(section.wings, function(h) {
             return h != handle;
-        });
+        })
         pushDataAndRefresh();
-    });
-    
+    })
     $('.pilot, .wing').each(function(){
         if ($(this).attr('data-handle') == ClientCallsign)
         {
@@ -882,7 +879,7 @@ const renderFlights = function() {
             }  
         })
         e.stopPropagation();
-    });
+    })
     $(':not(.mb-pilot-options, .mb-pilot-options li)').click(()=>{
         $('.mb-pilot-options').prop('display', 'none');
     })
@@ -894,12 +891,12 @@ const renderFlights = function() {
 
 //#region Assignment logic
 
-const MoveSection = function(secNo, flightName) {
+function moveSection(secNo, flightName) {
     if (!isSectionInFlight(secNo, flightName)) {
         let lead = sections[secNo].lead;
-        let q = _.findIndex(flights, function(v){ return v.name == lead});
+        let q = _.findIndex(flights, (v) => { return v.name == lead });
         if (q !== -1) oldFlight = lead;
-        let g = _.findIndex(flights, function(v){ return v.name == flightName});
+        let g = _.findIndex(flights, (v) => { return v.name == flightName });
         removeSectionFromAllFlights(secNo);
         flights[g].sections.push(secNo);
         addDirective('Section ' + secNo + ' go ' + flightName + ' flight');
@@ -908,7 +905,7 @@ const MoveSection = function(secNo, flightName) {
     return false;
 }
 
-const PromoteToFlightLead = function(pilot, flight = null) {
+const promoteToFlightLead = function(pilot, flight = null) {
     let section = sections[pilots[pilot].section];
     let oldname = null;
     let success = false;
@@ -958,7 +955,7 @@ const changePilotMisord = function(pilot) {
     }
 }
 
-const DismissSection = function(secNo) {
+const dismissSection = function(secNo) {
     let _pilots = [];
     if (secNo) {
         let section = sections[secNo];
@@ -1087,12 +1084,12 @@ const changePilotSection = function(pilot, newSection = 0, flight = null) {
 
 //#region Voice command processing
 
-const MoveSectionVoice = function (secNo, flightName) {
+const moveSectionVoice = function (secNo, flightName) {
     if (!isBoardMaster) return;
     secNo = GetSectionNumVoice(secNo);
     flightName = GetFlightNameVoice(flightName);
     if (!flightName) return;
-    if (!MoveSection(secNo, flightName)) return;
+    if (!moveSection(secNo, flightName)) return;
     click2.play();
     pushDataAndRefresh();
 }
@@ -1111,7 +1108,7 @@ const dismissPilotVoice = function(pilot) {
 const dismissSectionVoice = function(secNo) {
     if (!isBoardMaster) return;
     secNo = GetSectionNumVoice(secNo); 
-    if (!DismissSection(secNo)) return;
+    if (!dismissSection(secNo)) return;
     click2.play();
     pushDataAndRefresh();
 }
@@ -1140,7 +1137,7 @@ const ChangeFlightLeadVoice = function(pilot) {
         // send error to voicebox that flightleads must be section leads first
         return;
     }
-    if (PromoteToFlightLead(pilot)) {
+    if (promoteToFlightLead(pilot)) {
         click2.play();
         pushDataAndRefresh();
     }
@@ -1263,11 +1260,9 @@ const dragEnd = function(event) {
 }
 
 const allowDrop = function(event) {
-    if (!isBoardMaster) return;
-    event.preventDefault();
-    timer++;
-    if (timer < 60) return;
+    if (!isBoardMaster || timer++ < 60) return;
     timer = 0;
+    event.preventDefault();
     $('.newElement').addClass('hidden');
     let id = $(event.target).attr('id') || $(event.target).attr('data-id');
     if (id === undefined || id === null || id == '')
@@ -1277,20 +1272,20 @@ const allowDrop = function(event) {
     let ignoreDistance = false;
     let source = $(draggedItem).attr('id') || $(draggedItem).attr('data-id');
     switch (id) {
-        case "section": case "wing": case "wings": case "newWing":
+        case "section", "wing", "wings", "newWing":
             if (source == "section") newText = "Add Wings ...";
             else if (source == "wing" || source == "pilot") newText = "Add Wing ...";
             cl = ".wing";
             break;
-        case "flight": case "newSection":
+        case "flight", "newSection":
             cl = ".section";
             break;
-        case "newFlight": case "newFlightEmpty": case "flights":
+        case "newFlight", "newFlightEmpty", "flights":
             id = "#newFlight";
             $('#newFlightEmpty').addClass('hidden');
             ignoreDistance = true;
             break;
-        case "pilot": case "newPilot": case "pilotList": case "pilots":
+        case "pilot", "newPilot", "pilotList", "pilots":
             if (source == "section") newText = "Deactivate Section ...";
             else if (source == "pilot") return;
             else newText = "Deactivate Pilot ...";
@@ -1313,7 +1308,7 @@ const allowDrop = function(event) {
     if (ignoreDistance) return;
     
     let choices = [];
-    $('*').each(function(i, e) {
+    $('*').each(function() {
         if (!$(this).hasClass('newElement')) return true;
 
         if ($(this).attr('data-flight') != $(event.target).attr('data-flight')) {
@@ -1343,8 +1338,7 @@ const allowDrop = function(event) {
     if (choices.length > 1) {
         _.sortBy(choices, 'diff');
         choices.shift();
-        _.each(choices, function(e, i, l) 
-            { $(e.ele).addClass('hidden'); });
+        _.each(choices, (e) => { $(e.ele).addClass('hidden'); });
     }
 };
 
@@ -1367,7 +1361,7 @@ const drop = function(event) {
         
         if (isSection) {
             let secNo = Number(source);
-            if (DismissSection(secNo)) finishDrop(event);
+            if (dismissSection(secNo)) finishDrop(event);
         } else if (pilots[source].section !== 0) {
             changePilotSection(source);
             finishDrop(event);
@@ -1425,7 +1419,7 @@ const drop = function(event) {
         }
         if (isSection) { // Move a section to a new flight
             let sectionNo = Number(source);
-            if (!MoveSection(sectionNo, flightName)) return;
+            if (!moveSection(sectionNo, flightName)) return;
         }
 
         finishDrop(event);
@@ -1494,7 +1488,7 @@ const getMISORDParameters = function(callback) {
         .getMisordData();
 }
 
-const ChangePilotInfo = function(t = 1) {
+const changePilotInfo = function(t = 1) {
     $('#LF-mb-buttonBar').animate({
         'margin-top': "-=1000",
     }, 1, function() {});
@@ -1541,7 +1535,7 @@ const pushDataAndRefresh = function() {
         .pushMboard(data);
 }
 
-const PushClientData = function() {
+const pushClientData = function() {
     
     let userdata = {
         callsign: ClientCallsign,
@@ -1559,7 +1553,7 @@ const PushClientData = function() {
             //console.log(response);
             if (!ClientLoaded) {
                 if (response == null) {
-                    PushClientData();
+                    pushClientData();
                     return;
                 }
                 $('#mb-welcome-warningbox').text('Receiving board data');
@@ -1588,7 +1582,7 @@ const requestBoardDataLoop = function() {
                     if (response && !mboardRefreshing && allowUpdate) {
                         pilots = response.pilots;
                         if (!_.keys(pilots).includes(ClientCallsign))
-                            PushClientData();
+                            pushClientData();
                         flights = response.flights;
                         sections = response.sections;
                         dataversion = response.dataversion;
@@ -1673,25 +1667,25 @@ const welcomeBoxCompleted = function() {
     } ,100);
 }
 
-const ConfirmationSuccessful = function() {
+const confirmationSuccessful = function() {
     $('#mb-welcome-warningbox').css('color','white');
     $('#mb-welcome-warningbox').text('Contacting server')
     AllowClickConfirmButton = false;
-    ChangeMisordTitle();
+    changeMisordTitle();
     click2.play();
-    PushClientData();
+    pushClientData();
     welcomeBoxLoadingDots();
 }
         
-const InitMBoard = function() {
+const initMBoard = function() {
     setTimeout(()=>{
         if (typeof ClientCallsign !== 'undefined' && ClientCallsign) {
             MBoardInit = true;
             $('#mb-debugBox').hide();
             getMISORDParameters(() => {
-                InitVoiceCommands();
+                initVoiceCommands();
                 requestBoardDataLoop();
-                PlaytimeUpdateLoop();
+                playtimeUpdateLoop();
                 updateLastActiveLoop();
                 $("#LF-mb-welcome-handle")
                   .html('Callsign: <span id="mboardCallsign" class="Callsign">'+ClientCallsign+'</span>');
@@ -1710,7 +1704,7 @@ const InitMBoard = function() {
             let msg = 'Could not load ClientCallsign. Press ESC to enter development mode.';
             console.error(msg);
             showDebugBox(msg);
-            InitMBoard();
+            initMBoard();
         }
     }, 1000);
 }
@@ -1741,13 +1735,13 @@ const voiceCommands = {
     '*pilot dismiss': dismissPilotVoice,
     '*pilot miss': dismissPilotVoice,
     
-    'section :number go *flightname flight': MoveSectionVoice,
+    'section :number go *flightname flight': moveSectionVoice,
     
     '*pilot take flight lead': ChangeFlightLeadVoice,
     '*pilot go flight lead': ChangeFlightLeadVoice,
 };
 
-const InitVoiceCommands = function() {
+const initVoiceCommands = function() {
     if (!annyang) {
         console.error("Speech Recognition is not supported on this browser.");
         $('#mb-toggleMic').prop('background-color', 'darkred');
@@ -1781,7 +1775,7 @@ const InitVoiceCommands = function() {
 
 //#region Init
 registerEvents();
-InitMBoard();
+initMBoard();
 $('.mb-top-button').balloon({ position: "bottom right" });
 ApplySoundToggle();
 //#endregion
