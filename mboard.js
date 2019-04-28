@@ -68,35 +68,6 @@ let sections = [];
 let pilots = {};
 let pilotsOld = undefined;
 
-const voiceCommands = {
-    // annyang will capture anything after a splat (*) and pass it to the function.
-    // e.g. saying "Show me Batman and Robin" is the same as calling showFlickr('Batman and Robin');
-    //'show me *tag': showFlickr,
-
-    // A named variable is a one word variable, that can fit anywhere in your command.
-    // e.g. saying "calculate October stats" will call calculateStats('October');
-    //'calculate :month stats': calculateStats,
-
-    // By defining a part of the following command as optional, annyang will respond to both:
-    // "say hello to my little friend" as well as "say hello friend"
-    //'say hello (to my little) friend': greeting,
-    
-    '*pilot go section :number (*args)': changePilotSectionVoice,
-    
-    'section :number dismissed': dismissSectionVoice,
-    'section :number dismiss': dismissSectionVoice,
-    'section :number miss': dismissSectionVoice,
-    
-    '*pilot dismissed': dismissPilotVoice,
-    '*pilot dismiss': dismissPilotVoice,
-    '*pilot miss': dismissPilotVoice,
-    
-    'section :number go *flightname flight': MoveSectionVoice,
-    
-    '*pilot take flight lead': ChangeFlightLeadVoice,
-    '*pilot go flight lead': ChangeFlightLeadVoice,
-};
-
 //#region Utility functions
 
 const GetPlaytimeHTML = function(pilot) {
@@ -1751,6 +1722,35 @@ window.addEventListener('error', e => {
 $('#mb-debugBox').click(function(){
     alert(LastError.error + ' at line ' + LastError.lineno);
 });
+
+const voiceCommands = {
+    // annyang will capture anything after a splat (*) and pass it to the function.
+    // e.g. saying "Show me Batman and Robin" is the same as calling showFlickr('Batman and Robin');
+    //'show me *tag': showFlickr,
+
+    // A named variable is a one word variable, that can fit anywhere in your command.
+    // e.g. saying "calculate October stats" will call calculateStats('October');
+    //'calculate :month stats': calculateStats,
+
+    // By defining a part of the following command as optional, annyang will respond to both:
+    // "say hello to my little friend" as well as "say hello friend"
+    //'say hello (to my little) friend': greeting,
+    
+    '*pilot go section :number (*args)': changePilotSectionVoice,
+    
+    'section :number dismissed': dismissSectionVoice,
+    'section :number dismiss': dismissSectionVoice,
+    'section :number miss': dismissSectionVoice,
+    
+    '*pilot dismissed': dismissPilotVoice,
+    '*pilot dismiss': dismissPilotVoice,
+    '*pilot miss': dismissPilotVoice,
+    
+    'section :number go *flightname flight': MoveSectionVoice,
+    
+    '*pilot take flight lead': ChangeFlightLeadVoice,
+    '*pilot go flight lead': ChangeFlightLeadVoice,
+};
 
 InitMBoard();
 $('.mb-top-button').balloon({ position: "bottom right" });
