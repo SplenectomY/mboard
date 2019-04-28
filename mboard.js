@@ -343,7 +343,16 @@ const registerEvents = function(){
     $('#LF-mb-welcome-doctrine-selection, #LF-mb-welcome-ship-selection, #LF-mb-welcome-misord-selection').click(function(e) {
         let type = $(this).attr('data-type');
         if (type == 'misord' && !AllowMISORDSelection) return;
-        applyListItemClick();
+        $('.LF-mb-doctrineListItem, .LF-mb-shipListItem, .LF-mb-misordListItem').click(function(){
+            click2.play();
+            let type = $(this).attr('data-type');
+            let item = $(this).text();
+            if (type == 'ship') ClientShip = item;
+            else if (type == 'doctrine') ClientDoctrine = item;
+            else ClientMisord = item.charAt(0).toLowerCase();
+            $('#LF-mb-welcome-'+type+'-selection').text(item);
+            $('#LF-mb-'+type+'ListBox').addClass('hidden');
+        });
         click2.play();
         $('.LF-mb-welcome-listbox').addClass('hidden');
         $('#LF-mb-'+type+'ListBox').removeClass('hidden');
@@ -453,59 +462,6 @@ const registerEvents = function(){
 //#endregion
 
 //#region Rendering
-
-const mboardHTML = ''
-+'<div id="LF-mb-buttonBar" class="LF-mb-buttonBar preload-top">'
-    +'<div class="mb-top-button" id="mb-backToPortal" alt="Return to LF Portal"></div>'
-    +'<div class="mb-top-button" id="mb-togglePilotInfo" alt="Toggle doctrine and ship display"></div>'
-    +'<div class="mb-top-button" id="mb-toggleMic" alt="Toggle voice commands"></div>'
-    +'<div class="mb-top-button" id="mb-changeInfo" alt="Change pilot info"></div>'
-    +'<div class="mb-top-button" id="mb-toggleSound" alt="Toggle sound effects"></div>'
-+'</div>'
-
-+'<div id="main" class="mb-container preload-left">'
-    +'<span class="directiveTitle">Active Flights</span>'
-    +'<ul id="flights" class="mb-noInnerBG mb-scrollContainer" ondrop="drop(event)" ondragover="allowDrop(event)"></ul>'
-+'</div>'
-
-+'<div id="directives" class="mb-container preload-left">'
-    +'<span class="directiveTitle" id="misordTitle">MISORD ...</span>'
-    +'<div id="parameterBox" class="mb-scrollContainer"><div contenteditable="false" id="parameters"></div><div id="button_editParams">Edit</div></div>'
-    +'<span class="directiveTitle">Directives</span>'
-    +'<div id="summaryBox" class="mb-scrollContainer"><ul id="summary"></ul></div>'
-+'</div>'
-
-+'<div id="pilots" class="mb-container preload-left" ondrop="drop(event)" ondragover="allowDrop(event)">'
-    +'<span class="directiveTitle">Unassigned Pilots</span>'
-    +'<ul id="pilotList" class="mb-noInnerBG mb-scrollContainer" ondrop="drop(event)" ondragover="allowDrop(event)"></ul>'
-+'</div>'
-
-+'<div id="LF-mb-welcome">'
-    +'<span id="mb-welcome-head" style="width: 100%; text-align: center; margin: 0 auto; position: relative;">Welcome pilot. Please confirm your joining report.</span>'
-    +'<div id="LF-mb-welcome-handle" class="LF-mb-welcome-title">Callsign:</div>'
-    +'<div id="LF-mb-welcome-doctrine" class="LF-mb-welcome-title">Doctrine: '
-        +'<div id="LF-mb-welcome-doctrine-selection" data-type="doctrine" class="LF-mb-welcome-selection">Select a doctrine ...</div>'
-        +'<ul id="LF-mb-doctrineListBox" class="LF-mb-welcome-listbox hidden"></ul>'
-    +'</div>'
-    +'<div id="LF-mb-welcome-ship" class="LF-mb-welcome-title">Ship:'
-            +'<div id="LF-mb-welcome-ship-selection" data-type="ship" class="LF-mb-welcome-selection">Select a ship ...</div>'
-            +'<ul id="LF-mb-shipListBox" class="LF-mb-welcome-listbox hidden"></ul>'
-    +'</div>'
-    +'<div id="LF-mb-welcome-playtime" class="LF-mb-welcome-title">Playtime (hours):'
-        +'<input type="text" id="LF-mb-welcome-playtimeAmount" placeholder="1" value="1">'
-    +'</div>'
-    +'<div id="LF-mb-welcome-misord" class="LF-mb-welcome-title">MISORD:'
-        +'<div id="LF-mb-welcome-misord-selection" alt="" data-type="misord" class="LF-mb-welcome-selection">Select a MISORD ...</div>'
-        +'<ul id="LF-mb-misordListBox" class="LF-mb-welcome-listbox hidden"></ul>'
-    +'</div>'
-    +'<div id="LF-mb-welcome-remarks" class="LF-mb-welcome-title">Remarks (optional):</div>'
-    +'<input type="text" id="LF-mb-welcome-remarksText" placeholder="e.g. AFK 10 mins at 2000 EST">'
-    +'<div id="LF-mb-welcome-confirmButton" class="LF-mb-welcome-title">CONFIRM</div>'
-    +'<div id="mb-welcome-warningbox"></div>'
-+'</div>'
-
-+'<div id="mb-debugBox">Loading ...</div>'
-+'';
 
 const renderMISORDList = function() {
     let misordHTML = '';
@@ -1758,19 +1714,6 @@ const InitMBoard = function() {
         }
     }, 1000);
 }
-
-const applyListItemClick = function(){
-    $('.LF-mb-doctrineListItem, .LF-mb-shipListItem, .LF-mb-misordListItem').click(function(){
-        click2.play();
-        let type = $(this).attr('data-type');
-        let item = $(this).text();
-        if (type == 'ship') ClientShip = item;
-        else if (type == 'doctrine') ClientDoctrine = item;
-        else ClientMisord = item.charAt(0).toLowerCase();
-        $('#LF-mb-welcome-'+type+'-selection').text(item);
-        $('#LF-mb-'+type+'ListBox').addClass('hidden');
-    });
-}
 //#endregion
 
 //#region Voice Command init
@@ -1837,7 +1780,6 @@ const InitVoiceCommands = function() {
 //#endregion
 
 //#region Init
-$('#mboard').html(mboardHTML);
 registerEvents();
 InitMBoard();
 $('.mb-top-button').balloon({ position: "bottom right" });
