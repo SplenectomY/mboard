@@ -1837,7 +1837,7 @@ const InitVoiceCommands = function() {
 //#endregion
 
 //#region Init
-$('#mboard').html('Test');
+$('div#mboard').html('Test');
 registerEvents();
 InitMBoard();
 $('.mb-top-button').balloon({ position: "bottom right" });
