@@ -3,14 +3,18 @@
 //#region Config
 
 /** Interval, in seconds, that the server is checked for new data */
-var UpdateInterval = 1;
+const UpdateInterval = 1;
         
-// Interval, in seconds, that determines how often a client checks the server
-// to refresh cached data
+/** Interval, in seconds, that determines how often a client 
+ * checks the server to refresh cached data */
 const LastActiveUpdateInterval = 120;
 
 //#endregion
 
+//#region Fields
+if (typeof isBoardMaster === 'undefined') 
+    isBoardMaster = false;
+    
 let DevMode = false;
 let LastError = null;
 let Misord = null
@@ -18,9 +22,7 @@ let AllowClickConfirmButton = true;
 let AllowMISORDSelection = true;
 let MBoardInit = false;
 let BoardOnline = true;
-if (typeof isBoardMaster === 'undefined') isBoardMaster = false;
 let ClientLoaded = false;
-//let ClientCallsign = null;
 let ClientDoctrine = "";
 let ClientShip = "";
 let ClientPlaytime = null;
@@ -42,17 +44,6 @@ let sectionWasDismissed = false;
 let lastRenderedDirective = null;
 let EditingParameters = false;
 let VoiceCommandArgs = {};
-let AllowVoiceCommands = Cookies.get('AllowVoiceCommands') != undefined ? 
-  (Cookies.get('AllowVoiceCommands') === 'true') : false;
-let PilotInfoGlobal = Cookies.get('PilotInfoGlobal') != undefined ? 
-  (Cookies.get('PilotInfoGlobal') === 'true') : true;
-let UserSettings = {
-    PilotInfo: Cookies.get('PilotInfo') != undefined ? 
-      Cookies.get('PilotInfo') : {},
-};
-let EnableSound = Cookies.get('EnableSound') != undefined ? 
-  (Cookies.get('EnableSound') === 'true') : true;
-
 
 let click1 = new Audio();
 click1.src = "http://lfmissionboard.000webhostapp.com/sfx/click1.wav";
@@ -67,6 +58,7 @@ let flights = [];
 let sections = [];
 let pilots = {};
 let pilotsOld = undefined;
+//#endregion
 
 //#region Utility functions
 
@@ -265,6 +257,16 @@ const FuzzyGetPilot = function(pilot) {
 //#endregion
 
 //#region User controls/preferences
+
+let AllowVoiceCommands = Cookies.get('AllowVoiceCommands') != undefined ? 
+  (Cookies.get('AllowVoiceCommands') === 'true') : false;
+
+let PilotInfoGlobal = Cookies.get('PilotInfoGlobal') != undefined ? 
+  (Cookies.get('PilotInfoGlobal') === 'true') : true;
+
+let EnableSound = Cookies.get('EnableSound') != undefined ? 
+  (Cookies.get('EnableSound') === 'true') : true;
+
 const ApplySoundToggle = function() {
     if (EnableSound) {
         click1.volume = 0.5;
@@ -304,121 +306,206 @@ const ApplyMicToggle = function() {
 
 //#endregion
 
-//#region Click events
+//#region Event registration
 
-$('#LF-mb-welcome-confirmButton').click(function(e) {
-    if (!MBoardInit) InitMBoard();
-    if (!AllowClickConfirmButton) return;
-    JoinReportPlayTime = $('#LF-mb-welcome-playtimeAmount').val();
-    ClientPlaytime = new Date().getTime() + (Number(JoinReportPlayTime) * 1000 * 60 * 60);
-    ClientCallsign = $('#mboardCallsign').html();
-    if (!ClientCallsign || ClientCallsign == '') return;
-    ClientRemarks = $('#LF-mb-welcome-remarksText').val();
-    let misordText = $('#LF-mb-welcome-misord-selection').text();
-    if (!ClientMisord) ClientMisord = misordText.length > 0 && misordText != 'Select a MISORD ...' ? misordText.charAt(0).toLowerCase() : '';
+const registerEvents = function(){
 
-    if (!ClientMisord || ClientMisord == '') {
-        $('#mb-welcome-warningbox').text('You must select a MISORD.')
-		return;
-    }
-	if (isNaN(ClientPlaytime)){
-		$('#mb-welcome-warningbox').text('Playtime must be a number.')
-		return;
-	}
-    if (ClientDoctrine == "" || ClientShip == "") {
-		$('#mb-welcome-warningbox').text('Please select a doctrine and ship.')
-		return;
-	}
-    ConfirmationSuccessful();
-})
+    $('#mb-debugBox').click(function(){
+        alert(LastError.error + ' at line ' + LastError.lineno);
+    });
 
-$('#LF-mb-welcome-doctrine-selection, #LF-mb-welcome-ship-selection, #LF-mb-welcome-misord-selection').click(function(e) {
-    let type = $(this).attr('data-type');
-    if (type == 'misord' && !AllowMISORDSelection) return;
-    applyListItemClick();
-    click2.play();
-    $('.LF-mb-welcome-listbox').addClass('hidden');
-    $('#LF-mb-'+type+'ListBox').removeClass('hidden');
-    e.stopPropagation(); 
-})
+    $('#LF-mb-welcome-confirmButton').click(function(e) {
+        if (!MBoardInit) InitMBoard();
+        if (!AllowClickConfirmButton) return;
+        JoinReportPlayTime = $('#LF-mb-welcome-playtimeAmount').val();
+        ClientPlaytime = new Date().getTime() + (Number(JoinReportPlayTime) * 1000 * 60 * 60);
+        ClientCallsign = $('#mboardCallsign').html();
+        if (!ClientCallsign || ClientCallsign == '') return;
+        ClientRemarks = $('#LF-mb-welcome-remarksText').val();
+        let misordText = $('#LF-mb-welcome-misord-selection').text();
+        if (!ClientMisord) ClientMisord = misordText.length > 0 && misordText != 'Select a MISORD ...' ? misordText.charAt(0).toLowerCase() : '';
 
-$(':not(.LF-mb-welcome-listbox, .LF-mb-welcome-selection)').click(function() {
-    $('.LF-mb-welcome-listbox').addClass('hidden');
-})
+        if (!ClientMisord || ClientMisord == '') {
+            $('#mb-welcome-warningbox').text('You must select a MISORD.')
+            return;
+        }
+        if (isNaN(ClientPlaytime)){
+            $('#mb-welcome-warningbox').text('Playtime must be a number.')
+            return;
+        }
+        if (ClientDoctrine == "" || ClientShip == "") {
+            $('#mb-welcome-warningbox').text('Please select a doctrine and ship.')
+            return;
+        }
+        ConfirmationSuccessful();
+    })
 
-$('#mb-toggleSound').click(()=>{
-    EnableSound = !EnableSound;
-    Cookies.set('EnableSound', EnableSound, { expires: 30 });
-    ApplySoundToggle();
-    click2.play();
-});
+    $('#LF-mb-welcome-doctrine-selection, #LF-mb-welcome-ship-selection, #LF-mb-welcome-misord-selection').click(function(e) {
+        let type = $(this).attr('data-type');
+        if (type == 'misord' && !AllowMISORDSelection) return;
+        applyListItemClick();
+        click2.play();
+        $('.LF-mb-welcome-listbox').addClass('hidden');
+        $('#LF-mb-'+type+'ListBox').removeClass('hidden');
+        e.stopPropagation(); 
+    })
 
-$('#button_editParams').click(function() {
-    if (EditingParameters === null || !isBoardMaster) return;
-    
-    click2.play();
-    if (!EditingParameters) {
-        $('div#parameters').css('border','2px dotted red')
-        $('div#parameters').attr('contenteditable', true);
-        $('#button_editParams').text('Send Changes');
-        EditingParameters = true;
-    }
-    else {
-        $('div#parameters').css('border','2px dotted transparent')
-        $('div#parameters').attr('contenteditable', false);
-        allowUpdate = false;
-        //let text = $('div#parameters').html().replace(/<div>/g, '\n');
-        //text = text.replace(/<\/div>/g, '');
-        google.script.run
-            .withSuccessHandler(function(version) {
-                dataversion = version;
-                EditingParameters = false;
-                allowUpdate = true;
-                $('#button_editParams').text('Edit');
-            }).pushMissionParams($('div#parameters').html(), ClientMisord);
-        $('#button_editParams').text('Sending changes, please wait ...');
-        EditingParameters = null;
-    }
-});
+    $(':not(.LF-mb-welcome-listbox, .LF-mb-welcome-selection)').click(function() {
+        $('.LF-mb-welcome-listbox').addClass('hidden');
+    })
 
-$('#mb-changeInfo').click(function(){
-    click2.play();
-    ChangePilotInfo();
-});
+    $('#mb-toggleSound').click(()=>{
+        EnableSound = !EnableSound;
+        Cookies.set('EnableSound', EnableSound, { expires: 30 });
+        ApplySoundToggle();
+        click2.play();
+    });
+
+    $('#button_editParams').click(function() {
+        if (EditingParameters === null || !isBoardMaster) return;
         
-$('#mb-togglePilotInfo').click(function() {
-    click2.play();
-    PilotInfoGlobal = !PilotInfoGlobal;
-    Cookies.set('PilotInfoGlobal', PilotInfoGlobal, { expires: 30 });
-    ApplyPilotInfoGlobal();
-});
-        
-$("#mb-toggleMic").click(function() {
-    click2.play();
-    if (!annyang) return;
-    AllowVoiceCommands = !AllowVoiceCommands;    
-    Cookies.set('AllowVoiceCommands', AllowVoiceCommands, { expires: 30 });
-    ApplyMicToggle();
-});
-        
-$('#mb-backToPortal').click(function() {
-    BoardClosed = true;
-    click2.play();
-    setTimeout(function(){ 
-        ChangePilotInfo(3000);
-        startSound.play();
-        setTimeout(()=>{
-            try
-            { getPage('LOGFORM'); }
-            catch(e)
-            { console.error(e);}
-        }, 1000);
-    }, 500);    
-});
+        click2.play();
+        if (!EditingParameters) {
+            $('div#parameters').css('border','2px dotted red')
+            $('div#parameters').attr('contenteditable', true);
+            $('#button_editParams').text('Send Changes');
+            EditingParameters = true;
+        }
+        else {
+            $('div#parameters').css('border','2px dotted transparent')
+            $('div#parameters').attr('contenteditable', false);
+            allowUpdate = false;
+            //let text = $('div#parameters').html().replace(/<div>/g, '\n');
+            //text = text.replace(/<\/div>/g, '');
+            google.script.run
+                .withSuccessHandler(function(version) {
+                    dataversion = version;
+                    EditingParameters = false;
+                    allowUpdate = true;
+                    $('#button_editParams').text('Edit');
+                }).pushMissionParams($('div#parameters').html(), ClientMisord);
+            $('#button_editParams').text('Sending changes, please wait ...');
+            EditingParameters = null;
+        }
+    });
+
+    $('#mb-changeInfo').click(function(){
+        click2.play();
+        ChangePilotInfo();
+    });
+            
+    $('#mb-togglePilotInfo').click(function() {
+        click2.play();
+        PilotInfoGlobal = !PilotInfoGlobal;
+        Cookies.set('PilotInfoGlobal', PilotInfoGlobal, { expires: 30 });
+        ApplyPilotInfoGlobal();
+    });
+            
+    $("#mb-toggleMic").click(function() {
+        click2.play();
+        if (!annyang) return;
+        AllowVoiceCommands = !AllowVoiceCommands;    
+        Cookies.set('AllowVoiceCommands', AllowVoiceCommands, { expires: 30 });
+        ApplyMicToggle();
+    });
+            
+    $('#mb-backToPortal').click(function() {
+        BoardClosed = true;
+        click2.play();
+        setTimeout(function(){ 
+            ChangePilotInfo(3000);
+            startSound.play();
+            setTimeout(()=>{
+                try
+                { getPage('LOGFORM'); }
+                catch(e)
+                { console.error(e);}
+            }, 1000);
+        }, 500);    
+    });
+
+    window.addEventListener('error', e => {
+        showDebugBox('Line '+e.lineno+': '+String(e.error));
+        LastError = e;
+    });
+
+    document.onkeydown = function (data) {
+        // press E to enter dev mode if the client is not loaded
+        // make this more secure in the future
+        if (data.which == 27 && !ClientLoaded 
+        && !DevMode && typeof ClientCallsign === 'undefined') {
+            console.log('DEVMODE');
+            DevMode = true;
+            ClientCallsign = 'Splen';
+            ClientShip = 'Merlin';
+            ClientDoctrine = 'Nugget';
+            ClientMisord = 'z';
+            JoinReportPlayTime = 1;
+            ClientRemarks = 'in development mode';
+            if (ClientCallsign == 'Splen') isBoardMaster = true;
+            ClientPlaytime = new Date().getTime() + (60 * 60 * 1000);
+            ConfirmationSuccessful();
+        }
+    };
+
+}
 
 //#endregion
 
-//#region Rendering methods
+//#region Rendering
+
+const mboardHTML = ''
++'<div id="LF-mb-buttonBar" class="LF-mb-buttonBar preload-top">'
+    +'<div class="mb-top-button" id="mb-backToPortal" alt="Return to LF Portal"></div>'
+    +'<div class="mb-top-button" id="mb-togglePilotInfo" alt="Toggle doctrine and ship display"></div>'
+    +'<div class="mb-top-button" id="mb-toggleMic" alt="Toggle voice commands"></div>'
+    +'<div class="mb-top-button" id="mb-changeInfo" alt="Change pilot info"></div>'
+    +'<div class="mb-top-button" id="mb-toggleSound" alt="Toggle sound effects"></div>'
++'</div>'
+
++'<div id="main" class="mb-container preload-left">'
+    +'<span class="directiveTitle">Active Flights</span>'
+    +'<ul id="flights" class="mb-noInnerBG mb-scrollContainer" ondrop="drop(event)" ondragover="allowDrop(event)"></ul>'
++'</div>'
+
++'<div id="directives" class="mb-container preload-left">'
+    +'<span class="directiveTitle" id="misordTitle">MISORD ...</span>'
+    +'<div id="parameterBox" class="mb-scrollContainer"><div contenteditable="false" id="parameters"></div><div id="button_editParams">Edit</div></div>'
+    +'<span class="directiveTitle">Directives</span>'
+    +'<div id="summaryBox" class="mb-scrollContainer"><ul id="summary"></ul></div>'
++'</div>'
+
++'<div id="pilots" class="mb-container preload-left" ondrop="drop(event)" ondragover="allowDrop(event)">'
+    +'<span class="directiveTitle">Unassigned Pilots</span>'
+    +'<ul id="pilotList" class="mb-noInnerBG mb-scrollContainer" ondrop="drop(event)" ondragover="allowDrop(event)"></ul>'
++'</div>'
+
++'<div id="LF-mb-welcome">'
+    +'<span id="mb-welcome-head" style="width: 100%; text-align: center; margin: 0 auto; position: relative;">Welcome pilot. Please confirm your joining report.</span>'
+    +'<div id="LF-mb-welcome-handle" class="LF-mb-welcome-title">Callsign:</div>'
+    +'<div id="LF-mb-welcome-doctrine" class="LF-mb-welcome-title">Doctrine: '
+        +'<div id="LF-mb-welcome-doctrine-selection" data-type="doctrine" class="LF-mb-welcome-selection">Select a doctrine ...</div>'
+        +'<ul id="LF-mb-doctrineListBox" class="LF-mb-welcome-listbox hidden"></ul>'
+    +'</div>'
+    +'<div id="LF-mb-welcome-ship" class="LF-mb-welcome-title">Ship:'
+            +'<div id="LF-mb-welcome-ship-selection" data-type="ship" class="LF-mb-welcome-selection">Select a ship ...</div>'
+            +'<ul id="LF-mb-shipListBox" class="LF-mb-welcome-listbox hidden"></ul>'
+    +'</div>'
+    +'<div id="LF-mb-welcome-playtime" class="LF-mb-welcome-title">Playtime (hours):'
+        +'<input type="text" id="LF-mb-welcome-playtimeAmount" placeholder="1" value="1">'
+    +'</div>'
+    +'<div id="LF-mb-welcome-misord" class="LF-mb-welcome-title">MISORD:'
+        +'<div id="LF-mb-welcome-misord-selection" alt="" data-type="misord" class="LF-mb-welcome-selection">Select a MISORD ...</div>'
+        +'<ul id="LF-mb-misordListBox" class="LF-mb-welcome-listbox hidden"></ul>'
+    +'</div>'
+    +'<div id="LF-mb-welcome-remarks" class="LF-mb-welcome-title">Remarks (optional):</div>'
+    +'<input type="text" id="LF-mb-welcome-remarksText" placeholder="e.g. AFK 10 mins at 2000 EST">'
+    +'<div id="LF-mb-welcome-confirmButton" class="LF-mb-welcome-title">CONFIRM</div>'
+    +'<div id="mb-welcome-warningbox"></div>'
++'</div>'
+
++'<div id="mb-debugBox">Loading ...</div>'
++'';
 
 const renderMISORDList = function() {
     let misordHTML = '';
@@ -1613,6 +1700,7 @@ const updateLastActiveLoop = function() {
 
 //#endregion
 
+//#region Core
 const welcomeBoxCompleted = function() {
     setTimeout(function() {
         if (!ClientLoaded) {
@@ -1639,36 +1727,6 @@ const ConfirmationSuccessful = function() {
     welcomeBoxLoadingDots();
 }
         
-const InitVoiceCommands = function() {
-    if (!annyang) {
-        console.error("Speech Recognition is not supported on this browser.");
-        $('#mb-toggleMic').prop('background-color', 'darkred');
-        $('#mb-toggleMic:hover').prop('background-color', 'transparent');
-        $('#mb-toggleMic').attr('alt', 'Speech Recognition is not supported on this browser.');
-        return;
-    }
-
-    annyang.addCommands(voiceCommands);
-
-    annyang.addCallback('error', function() {
-        console.error('Voice Commands: There was an error!');
-    });
-
-    annyang.addCallback('result', function(array) {
-        console.log('Voice input:')
-        let e = array[0];
-        // fixes for weird and unexpected phrases
-        if (e.toLowerCase().includes('gosection8')) {
-            let f = e.toLowerCase();
-            f = f.replace('gosection8','go section 8');
-            annyang.trigger(f);
-            return;
-        }
-    });
-    
-    ApplyMicToggle(); 
-}
-
 const InitMBoard = function() {
     setTimeout(()=>{
         if (typeof ClientCallsign !== 'undefined' && ClientCallsign) {
@@ -1713,15 +1771,9 @@ const applyListItemClick = function(){
         $('#LF-mb-'+type+'ListBox').addClass('hidden');
     });
 }
+//#endregion
 
-window.addEventListener('error', e => {
-    showDebugBox('Line '+e.lineno+': '+String(e.error));
-    LastError = e;
-});
-
-$('#mb-debugBox').click(function(){
-    alert(LastError.error + ' at line ' + LastError.lineno);
-});
+//#region Voice Command init
 
 const voiceCommands = {
     // annyang will capture anything after a splat (*) and pass it to the function.
@@ -1752,25 +1804,36 @@ const voiceCommands = {
     '*pilot go flight lead': ChangeFlightLeadVoice,
 };
 
-InitMBoard();
-$('.mb-top-button').balloon({ position: "bottom right" });
-ApplySoundToggle();
-
-document.onkeydown = function (data) {
-    // press E to enter dev mode if the client is not loaded
-    // make this more secure in the future
-    if (data.which == 27 && !ClientLoaded 
-      && !DevMode && typeof ClientCallsign === 'undefined') {
-        console.log('DEVMODE');
-        DevMode = true;
-        ClientCallsign = 'Splen';
-        ClientShip = 'Merlin';
-        ClientDoctrine = 'Nugget';
-        ClientMisord = 'z';
-        JoinReportPlayTime = 1;
-        ClientRemarks = 'in development mode';
-        if (ClientCallsign == 'Splen') isBoardMaster = true;
-        ClientPlaytime = new Date().getTime() + (60 * 60 * 1000);
-        ConfirmationSuccessful();
+const InitVoiceCommands = function() {
+    if (!annyang) {
+        console.error("Speech Recognition is not supported on this browser.");
+        $('#mb-toggleMic').prop('background-color', 'darkred');
+        $('#mb-toggleMic:hover').prop('background-color', 'transparent');
+        $('#mb-toggleMic').attr('alt', 'Speech Recognition is not supported on this browser.');
+        return;
     }
-};
+
+    annyang.addCommands(voiceCommands);
+
+    annyang.addCallback('error', function() {
+        console.error('Voice Commands: There was an error!');
+    });
+
+    annyang.addCallback('result', function(array) {
+        console.log('Voice input:')
+        let e = array[0];
+        // fixes for weird and unexpected phrases
+        if (e.toLowerCase().includes('gosection8')) {
+            let f = e.toLowerCase();
+            f = f.replace('gosection8','go section 8');
+            annyang.trigger(f);
+            return;
+        }
+    });
+    
+    ApplyMicToggle(); 
+}
+
+//#endregion
+
+//#region Init
