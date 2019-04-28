@@ -1340,12 +1340,12 @@ const allowDrop = function(event) {
         choices.shift();
         _.each(choices, (e) => { $(e.ele).addClass('hidden'); });
     }
-};
+}
 
 const finishDrop = function(event) {
     click1.play();
     pushDataAndRefresh();
-};
+}
         
 const drop = function(event) {
     if (!isBoardMaster) return;
@@ -1356,110 +1356,107 @@ const drop = function(event) {
     let source = item.attr('data-handle')
     let isSection = !isNaN(Number(source));
 
-    if (target == "newPilot" || target == "pilots" || target == "pilotList" || target == "pilot") {
-        let _pilots = [];
-        
-        if (isSection) {
-            let secNo = Number(source);
-            if (dismissSection(secNo)) finishDrop(event);
-        } else if (pilots[source].section !== 0) {
-            changePilotSection(source);
-            finishDrop(event);
-        }
-
-    } else if (target == "newFlight" || target == "flights") {
-        if (isSection) { // Create new flight with section lead as flight lead
-            let sectionNo = Number(source);
-            let section = sections[sectionNo];
-            removeSectionFromAllFlights(sectionNo);
-            
-            // If section lead was flight lead, flight needs a new name
-            let g = _.findIndex(flights, function(v){ return v.name == section.lead});
-            if (g !== -1) oldFlight = section.lead;
-            
-            flights.push({
-                name:section.lead,
-                sections:[sectionNo],
-                misord:ClientMisord,
-            });
-            changePilotMisord(section.lead);
-            addDirective('Section ' + sectionNo + ' go ' + section.lead + ' flight');
-        } else { // Create new flight and new section with pilot as lead for both
-            let newSection = -1;
-            if (pilots[source].section != 0 && sections[pilots[source].section].lead == source && sections[pilots[source].section].wings.length == 0) {
-                removeSectionFromAllFlights(pilots[source].section);
-                newSection = pilots[source].section;
-            } 
-            
-            changePilotSection(source, newSection);
-        }
-
-        finishDrop(event);
-
-    } else if (target == "flight" || target == "newSection") {
-        let flightName = $(event.target).attr('data-flight');
-        let g = _.findIndex(flights, function(v){ return v.name == flightName});
-        let flight = flights[g];
-        if (!isSection) { // Start a new section in the flight with pilot as lead
-
-            let doNotContinue = false;
-            _.each(flights[g].sections, function(e, i, l) {
-                if (sections[e].lead == source && sections[e].wings.length === 0)
-                    doNotContinue = true;
-            })
-            if (doNotContinue) return;
-            
-            //If pilot was alone in section, move whole section instead
-            let pilotSection = sections[pilots[source].section]
-            if (pilotSection.lead == source && pilotSection.wings.length === 0) {
-                isSection = true;
-                source = pilots[source].section;
+    switch(target) {
+        case "newPilot", "pilots", "pilotList", "pilot":
+            if (isSection) {
+                let secNo = Number(source);
+                if (dismissSection(secNo)) finishDrop(event);
+            } else if (pilots[source].section !== 0) {
+                changePilotSection(source);
+                finishDrop(event);
             }
-            else changePilotSection(source, -1, g);
-        }
-        if (isSection) { // Move a section to a new flight
-            let sectionNo = Number(source);
-            if (!moveSection(sectionNo, flightName)) return;
-        }
+            break;
+        case "newFlight", "flights":
+            if (isSection) { // Create new flight with section lead as flight lead
+                let sectionNo = Number(source);
+                let section = sections[sectionNo];
+                removeSectionFromAllFlights(sectionNo);
+                
+                // If section lead was flight lead, flight needs a new name
+                let g = _.findIndex(flights, (v) => { return v.name == section.lead; });
+                if (g !== -1) oldFlight = section.lead;
+                
+                flights.push({
+                    name:section.lead,
+                    sections:[sectionNo],
+                    misord:ClientMisord
+                });
+                changePilotMisord(section.lead);
+                addDirective('Section ' + sectionNo + ' go ' + section.lead + ' flight');
+            } else { // Create new flight and new section with pilot as lead for both
+                let newSection = -1;
+                if (pilots[source].section != 0 && sections[pilots[source].section].lead == source && sections[pilots[source].section].wings.length == 0) {
+                    removeSectionFromAllFlights(pilots[source].section);
+                    newSection = pilots[source].section;
+                } 
+                
+                changePilotSection(source, newSection);
+            }
 
-        finishDrop(event);
+            finishDrop(event);
+            break;
+        case "flight", "newSection":
+            let flightName = $(event.target).attr('data-flight');
+            let g = _.findIndex(flights, function(v){ return v.name == flightName});
+            let flight = flights[g];
+            if (!isSection) { // Start a new section in the flight with pilot as lead
 
-    } else if (target == "section" || target == "wing" || target == "wings" || target == "newWing") {
-        let sectionNo = null;
-        switch (target) {
-            case "section":
-                sectionNo = Number($(event.target).attr('data-handle'));
-                break;
-            case "wing":
-                sectionNo = pilots[$(event.target).attr('data-handle')].section;
-                break;
-            case "wings":
-            case "newWing":
-                sectionNo = Number($(event.target).attr('data-section'));
-                break;
-        }
-        let section = sections[sectionNo];
-        if (isSection) { // make all members of a section wings of the new section
-            let sourceSectionNo = Number(source);
-            if (sourceSectionNo == sectionNo) return;
-            let sourceSection = sections[sourceSectionNo];
-            sourceSection.wings
-            for (var i = sourceSection.wings.length; i-- > 0;)
-                changePilotSection(sourceSection.wings[i], sectionNo);
-            changePilotSection(sourceSection.lead, sectionNo);
-            
-            sections[sourceSectionNo].lead = "";
-            sections[sourceSectionNo].wings = [];
-            removeSectionFromAllFlights(sourceSectionNo);
-        } else { // make pilot a wing in the target section
-            let pilot = pilots[source];
-            if (pilot.section !== sectionNo) {
-                changePilotSection(source, sectionNo);
-            } else return;
-        }
-        finishDrop(event);
-    }
-};
+                let doNotContinue = false;
+                _.each(flights[g].sections, function(e, i, l) {
+                    if (sections[e].lead == source && sections[e].wings.length === 0)
+                        doNotContinue = true;
+                })
+                if (doNotContinue) return;
+                
+                //If pilot was alone in section, move whole section instead
+                let pilotSection = sections[pilots[source].section]
+                if (pilotSection.lead == source && pilotSection.wings.length === 0) {
+                    isSection = true;
+                    source = pilots[source].section;
+                }
+                else changePilotSection(source, -1, g);
+            }
+            if (isSection) { // Move a section to a new flight
+                let sectionNo = Number(source);
+                if (!moveSection(sectionNo, flightName)) return;
+            }
+            finishDrop(event);
+            break;
+        case "section", "wing", "wings", "newWing":
+            let sectionNo = null;
+            switch (target) {
+                case "section":
+                    sectionNo = Number($(event.target).attr('data-handle'));
+                    break;
+                case "wing":
+                    sectionNo = pilots[$(event.target).attr('data-handle')].section;
+                    break;
+                case "wings", "newWing":
+                    sectionNo = Number($(event.target).attr('data-section'));
+                    break;
+            }
+            if (isSection) { // make all members of a section wings of the new section
+                let sourceSectionNo = Number(source);
+                if (sourceSectionNo == sectionNo) return;
+                let sourceSection = sections[sourceSectionNo];
+                sourceSection.wings
+                for (var i = sourceSection.wings.length; i-- > 0;)
+                    changePilotSection(sourceSection.wings[i], sectionNo);
+                changePilotSection(sourceSection.lead, sectionNo);
+                
+                sections[sourceSectionNo].lead = "";
+                sections[sourceSectionNo].wings = [];
+                removeSectionFromAllFlights(sourceSectionNo);
+            } else { // make pilot a wing in the target section
+                let pilot = pilots[source];
+                if (pilot.section !== sectionNo) {
+                    changePilotSection(source, sectionNo);
+                } else return;
+            }
+            finishDrop(event);
+            break;
+    } 
+}
 
 //#endregion
 
